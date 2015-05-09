@@ -7,34 +7,22 @@ using std::endl;
 using std::vector;
 using std::for_each;
 
-class Points {
+// forward declare element and iterator types
+class PointElement;
+class PointIterator;
+
+// define the container
+class PointBuffer {
+
+  friend class PointElement;
+  friend class PointIterator;
+
  public:
-
+  
   typedef vector<double>::size_type size_type;
-
-  class iterator {
-   public:
-    typedef iterator self_type;
-    typedef iterator value_type;
-    typedef iterator& reference;
-    typedef iterator* pointer;
-    //typedef std::forward_iterator_tag iterator_category;
-    typedef vector<double>::difference_type difference_type;
-    iterator(Points& points, Points::size_type index) :
-        points_(points), index_(index) { }
-    self_type operator++() { self_type i = *this; index_++; return i; }
-    self_type operator++(int junk) { index_++; return *this; }
-    iterator& operator*() { return *this; }
-    iterator* operator->() { return this; }
-    bool operator==(const self_type& rhs) { return index_ == rhs.index_; }
-    bool operator!=(const self_type& rhs) { return index_ != rhs.index_; }
-    double& x() { return points_.get_x()[index_]; }
-    double& y() { return points_.get_y()[index_]; }
-   private:
-    Points& points_;
-    Points::size_type index_;
-  };
-
+  typedef PointIterator iterator;
+  typedef PointElement value_type;
+  
   size_type size() const { return x.size(); }
   void resize(size_type count) {
     x.resize(count);
@@ -44,18 +32,66 @@ class Points {
   vector<double>& get_x() { return x; }
   vector<double>& get_y() { return y; }
 
-  iterator begin() {
-    return iterator(*this,0);
-  }
-
-  iterator end() {
-    return iterator(*this,size());
-  }
+  iterator begin();
+  iterator end();
   
  private:
   vector<double> x;
   vector<double> y;
 };
+
+// define element type
+class PointElement {
+  friend class PointIterator;
+ public:
+  PointElement(PointBuffer& point_buffer, PointBuffer::size_type index)
+      : point_buffer_(point_buffer), index_(index) {}
+  double& x() { return point_buffer_.x[index_]; }
+  double& y() { return point_buffer_.y[index_]; }
+ private:
+  PointBuffer& point_buffer_;
+  PointBuffer::size_type index_;
+};
+
+// define the iterator type
+class PointIterator {
+ public:
+  typedef PointIterator self_type;
+  typedef PointElement value_type;
+  typedef PointElement& reference;
+  typedef PointElement* pointer;
+  //typedef std::forward_iterator_tag iterator_category;
+  typedef vector<double>::difference_type difference_type;
+  PointIterator(PointBuffer& point_buffer, PointBuffer::size_type index) :
+      point_element_(point_buffer,index) { }
+  self_type operator++() {
+    self_type i = *this;
+    point_element_.index_++;
+    return i;
+  }
+  self_type operator++(int junk) {
+    point_element_.index_++;
+    return *this;
+  }
+  reference operator*() { return point_element_; }
+  //pointer operator->() { return this; }
+  bool operator==(const self_type& rhs) {
+    return point_element_.index_ == rhs.point_element_.index_;
+  }
+  bool operator!=(const self_type& rhs) {
+    return point_element_.index_ != rhs.point_element_.index_;
+  }
+ private:
+  PointElement point_element_;
+};
+
+PointBuffer::iterator PointBuffer::begin() {
+  return PointBuffer::iterator(*this,0);
+}
+
+PointBuffer::iterator PointBuffer::end() {
+  return PointBuffer::iterator(*this,size());
+}
 
 template <typename T>
 void print(const T& x) {
@@ -66,14 +102,14 @@ void print(const T& x) {
 }
 
 struct Printor {
-  void operator()(Points::iterator p) {
+  void operator()(PointBuffer::value_type p) {
     cout << "(" << p.x() << "," << p.y() << ")" << endl;
   }
 };
 
 int main() {
 
-  Points p;
+  PointBuffer p;
   p.resize(3);
   double c = 0.0;
   for ( auto& x : p.get_x() ) {
