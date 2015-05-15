@@ -4,6 +4,9 @@ CXXFLAGS := -std=c++11 -Wall
 soa-iterator: soa-iterator.cc
 	$(CXX) $(CXXFLAGS) $< -o $@
 
+soa-range: soa-range.cc
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 .PHONY: run
 run: soa-iterator
 	./$<
